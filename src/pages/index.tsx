@@ -1,4 +1,5 @@
 import Head from "next/head";
+import { useState } from "react";
 import { SignInButton, useUser } from "@clerk/nextjs";
 import { api } from "~/utils/api";
 import type { RouterOutputs } from "~/utils/api";
@@ -11,9 +12,19 @@ import { LoadingPage } from "~/components/loading";
 dayjs.extend(relativeTime);
 
 const CreatePostWizard = () => {
+	const [input, setinput] = useState("");
 	const { user } = useUser();
 
 	if (!user) return null;
+
+	const ctx = api.useContext();
+
+	const { mutate, isLoading: isPosting } = api.posts.create.useMutation({
+		onSuccess: () => {
+			setinput("");
+			void ctx.posts.getAll.invalidate();
+		}
+	});
 
 	return (
 		<div className="flex w-full gap-3">
@@ -27,7 +38,12 @@ const CreatePostWizard = () => {
 			<input
 				placeholder="Type some emojis!"
 				className="grow bg-transparent outline-none"
+				type="text"
+				value={input}
+				onChange={(e) => setinput(e.target.value)}
+				disabled={isPosting}
 			/>
+			<button onClick={() => mutate({ content: input })}>Post</button>
 		</div>
 	);
 };
