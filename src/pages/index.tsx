@@ -1,6 +1,11 @@
 import Head from "next/head";
 import { SignInButton, SignOutButton, useUser } from "@clerk/nextjs";
-import { api } from "~/utils/api";
+import { RouterOutputs, api } from "~/utils/api";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import Image from "next/image";
+
+dayjs.extend(relativeTime);
 
 const CreatePostWizard = () => {
 	const { user } = useUser();
@@ -9,10 +14,12 @@ const CreatePostWizard = () => {
 
 	return (
 		<div className="flex w-full gap-3">
-			<img
+			<Image
 				src={user.profileImageUrl}
 				alt="Profile Image"
 				className="w-14 h-14 rounded-full"
+				width={56}
+				height={56}
 			/>
 			<input
 				placeholder="Type some emojis!"
@@ -21,6 +28,32 @@ const CreatePostWizard = () => {
 		</div>
 	);
 };
+
+type PostWithUser = RouterOutputs["posts"]["getAll"][number];
+
+const PostView = (props: PostWithUser) => {
+	const { post, author } = props;
+	return (
+		<div key={post.id} className="flex gap-3 border-b border-slate-400 p-4">
+			<Image
+				src={author.profileImageUrl}
+				alt="Profile Image"
+				className="w-14 h-14 rounded-full"
+				width={56}
+				height={56}
+			/>
+			<div className="flex flex-col">
+				<div className="flex text-slate-300 font-bold gap-1">
+					<span>{`@${author.username || author.firstName}`}</span>
+					<span className="font-thin">
+						{`· ${dayjs(post.createdAt).fromNow()}`}
+					</span>
+				</div>
+				<span>{post.content}</span>
+			</div>
+		</div>
+	);
+}
 
 export default function Home() {
 	const user = useUser();
@@ -48,10 +81,8 @@ export default function Home() {
 					{!!user.isSignedIn && <CreatePostWizard />}
 				</div>
 				<div className="flex flex-col">
-					{data?.map((post) => (
-						<div key={post.id} className="border-b border-slate-400 p-8">
-							{post.content}
-						</div>
+					{data?.map((fullPost) => (
+						<PostView {...fullPost} key={fullPost.post.id}/>
 					))}
 				</div>
 			</div>
